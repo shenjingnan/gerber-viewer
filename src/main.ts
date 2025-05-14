@@ -120,7 +120,7 @@ function createText(
   x: number,
   y: number,
   fontSize: number = 24,
-  color: number = 0x0000dd
+  color: number = 0x0000dd,
 ) {
   // 使用TextStyle来创建更清晰的文本
   const style = new TextStyle({
