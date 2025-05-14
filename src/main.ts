@@ -1,11 +1,29 @@
-import { Application, Assets, Sprite, Graphics, Text } from "pixi.js";
+import {
+  Application,
+  Assets,
+  Sprite,
+  Graphics,
+  Text,
+  SCALE_MODES,
+  TextStyle,
+} from "pixi.js";
 
 (async () => {
   // Create a new application
   const app = new Application();
 
-  // Initialize the application
-  await app.init({ background: "#FFFFFF", resizeTo: window });
+  // Initialize the application with antialias enabled
+  await app.init({
+    background: "#FFFFFF",
+    resizeTo: window,
+    antialias: true, // 开启抗锯齿
+  });
+
+  // 设置更高的设备像素比以提高文字清晰度
+  // @ts-ignore - PixiJS类型定义可能不完整，但这些属性在运行时存在
+  app.renderer.resolution = window.devicePixelRatio || 2;
+  // @ts-ignore - PixiJS类型定义可能不完整，但这些属性在运行时存在
+  app.renderer.autoDensity = true; // 自动调整尺寸
 
   // Append the application canvas to the document body
   document.getElementById("pixi-container")!.appendChild(app.canvas);
@@ -24,6 +42,9 @@ import { Application, Assets, Sprite, Graphics, Text } from "pixi.js";
 
   // Load the bunny texture
   const texture = await Assets.load("/assets/bunny.png");
+
+  // 设置纹理的缩放模式为线性插值，提供更平滑的缩放
+  texture.baseTexture.scaleMode = SCALE_MODES.LINEAR;
 
   // Create a bunny Sprite
   const bunny = new Sprite(texture);
@@ -93,11 +114,39 @@ import { Application, Assets, Sprite, Graphics, Text } from "pixi.js";
   setupZoom(app, mainContainer);
 })();
 
+// 创建文本，优化清晰度
+function createText(
+  text: string,
+  x: number,
+  y: number,
+  fontSize: number = 24,
+  color: number = 0x0000dd
+) {
+  // 使用TextStyle来创建更清晰的文本
+  const style = new TextStyle({
+    fontFamily: "Arial, Helvetica, sans-serif",
+    fontSize,
+    fontWeight: "bold",
+    fill: color,
+    align: "center",
+    stroke: 0xffffff,
+    // @ts-ignore - PixiJS类型定义可能不完整，但这些属性在运行时存在
+    strokeThickness: 0.5, // 添加轻微描边增强对比度
+    letterSpacing: 1,
+  });
+
+  const textObj = new Text(text, style);
+  textObj.position.set(x, y);
+  // @ts-ignore - PixiJS类型定义可能不完整，但这些属性在运行时存在
+  textObj.resolution = 2; // 提高文本分辨率
+  return textObj;
+}
+
 // 实现缩放功能
 function setupZoom(app: Application, container: Sprite) {
   // 缩放配置
   const minScale = 0.2;
-  const maxScale = 3.0;
+  const maxScale = 10.0;
   const scaleStep = 0.1;
 
   // 监听鼠标滚轮事件
@@ -165,7 +214,7 @@ function setupZoom(app: Application, container: Sprite) {
   let clickTime = 0;
   let clickCount = 0;
 
-  container.on("pointerup", (event) => {
+  container.on("pointerup", () => {
     const currentTime = new Date().getTime();
     if (currentTime - clickTime < 300) {
       clickCount++;
@@ -183,12 +232,7 @@ function setupZoom(app: Application, container: Sprite) {
   });
 
   // 显示当前缩放比例
-  const zoomText = new Text("缩放: 100%", {
-    fontFamily: "Arial",
-    fontSize: 14,
-    fill: 0x000000,
-  });
-  zoomText.position.set(10, 10);
+  const zoomText = createText("缩放: 100%", 10, 10, 16, 0x000000);
   app.stage.addChild(zoomText);
 
   // 监听容器的scale变化，更新缩放文本
@@ -212,23 +256,11 @@ function drawResistor(
   graphics.endFill();
 
   // 添加电阻标签
-  const text = new Text(name, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x - 50, y - 40);
+  const text = createText(name, x - 50, y - 40);
   graphics.addChild(text);
 
   // 添加电阻值
-  const valueText = new Text(value, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  valueText.position.set(x - 50, y + 10);
+  const valueText = createText(value, x - 50, y + 10);
   graphics.addChild(valueText);
 
   // 绘制连接点
@@ -258,23 +290,11 @@ function drawCapacitor(
   graphics.lineTo(x + 10, y + 20);
 
   // 添加电容标签
-  const text = new Text(name, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x + 30, y - 20);
+  const text = createText(name, x + 30, y - 20);
   graphics.addChild(text);
 
   // 添加电容值
-  const valueText = new Text(value, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  valueText.position.set(x + 30, y + 10);
+  const valueText = createText(value, x + 30, y + 10);
   graphics.addChild(valueText);
 
   // 绘制连接点
@@ -313,23 +333,11 @@ function drawElectrolyticCapacitor(
   graphics.lineTo(x - 20, y - 5);
 
   // 添加电容标签
-  const text = new Text(name, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x + 30, y - 20);
+  const text = createText(name, x + 30, y - 20);
   graphics.addChild(text);
 
   // 添加电容值
-  const valueText = new Text(value, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  valueText.position.set(x + 30, y + 10);
+  const valueText = createText(value, x + 30, y + 10);
   graphics.addChild(valueText);
 
   // 绘制连接点
@@ -356,13 +364,7 @@ function drawDiode(graphics: Graphics, x: number, y: number, name: string) {
   graphics.lineTo(x + 15, y + 20);
 
   // 添加二极管标签
-  const text = new Text(name, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x - 50, y - 10);
+  const text = createText(name, x - 50, y - 10);
   graphics.addChild(text);
 
   // 绘制连接点
@@ -381,13 +383,7 @@ function drawIC(graphics: Graphics, x: number, y: number) {
   graphics.endFill();
 
   // 添加IC标签
-  const text = new Text("U4", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x, y - 90);
+  const text = createText("U4", x, y - 90);
   text.anchor.set(0.5, 0);
   graphics.addChild(text);
 
@@ -415,19 +411,9 @@ function drawIC(graphics: Graphics, x: number, y: number) {
   ];
 
   for (let i = 0; i < pinNames.length; i++) {
-    const pinText = new Text(pinNames[i], {
-      fontFamily: "Arial",
-      fontSize: 16,
-      fill: 0x000000,
-      align: "center",
-    });
+    const pinText = createText(pinNames[i], 0, 0, 16, 0x000000);
 
-    const numText = new Text(pinNumbers[i], {
-      fontFamily: "Arial",
-      fontSize: 16,
-      fill: 0x000000,
-      align: "center",
-    });
+    const numText = createText(pinNumbers[i], 0, 0, 16, 0x000000);
 
     // 调整位置以适应IC
     if (i < 2) {
@@ -461,13 +447,7 @@ function drawIC(graphics: Graphics, x: number, y: number) {
   }
 
   // 添加频率标记
-  const freqText = new Text("100kHz", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  freqText.position.set(x, y + 160);
+  const freqText = createText("100kHz", x, y + 160);
   freqText.anchor.set(0.5, 0);
   graphics.addChild(freqText);
 
@@ -491,13 +471,7 @@ function drawVCC(graphics: Graphics, x: number, y: number) {
   graphics.lineTo(x + 20, y);
 
   // 添加VCC标签
-  const text = new Text("VCC", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x, y - 30);
+  const text = createText("VCC", x, y - 30);
   text.anchor.set(0.5, 0);
   graphics.addChild(text);
 
@@ -547,13 +521,7 @@ function drawOutputLabel(
   graphics.endFill();
 
   // 添加标签
-  const text = new Text(label, {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  text.position.set(x + 20, y - 10);
+  const text = createText(label, x + 20, y - 10);
   graphics.addChild(text);
 
   // 绘制连接点
@@ -644,13 +612,7 @@ function drawWires(graphics: Graphics) {
 // 添加文本标签
 function addLabels(app: Application) {
   // VO1标签
-  const vo1Text = new Text("VO1", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: 0x0000dd,
-    align: "center",
-  });
-  vo1Text.position.set(850, 340);
+  const vo1Text = createText("VO1", 850, 340);
   app.stage.addChild(vo1Text);
 }
 
